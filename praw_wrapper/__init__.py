@@ -7,18 +7,10 @@ from datetime import timedelta
 from datetime import datetime
 from enum import Enum
 import re
+import pytz
 
 
 log = discord_logging.get_logger()
-
-
-def fullname_type(fullname):
-	if fullname.startswith("t1"):
-		return "comment"
-	elif fullname.startswith("t4"):
-		return "message"
-	else:
-		return None
 
 
 def id_from_fullname(fullname):
@@ -298,7 +290,7 @@ class Reddit:
 
 		result_comments = []
 		for comment in comments:
-			date_time = datetime.utcfromtimestamp(comment['created_utc'])
+			date_time = pytz.utc.localize(datetime.utcfromtimestamp(comment['created_utc']))
 			if last_seen > date_time:
 				break
 
