@@ -78,7 +78,9 @@ class Reddit:
 			refresh_token=refresh_token,
 			user_agent=user_agent)
 
-		log.info(f"Logged into reddit as u/{self.reddit.user.me().name} {prefix}")
+		self.username = self.reddit.user.me().name
+
+		log.info(f"Logged into reddit as u/{self.username} {prefix}")
 
 		if user_agent is None:
 			self.user_agent = self.reddit.config.user_agent
