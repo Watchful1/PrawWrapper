@@ -59,7 +59,7 @@ class Queue:
 
 
 class Reddit:
-	def __init__(self, user_name, prefix, no_post, user_agent=None):
+	def __init__(self, user_name, no_post, prefix=None, user_agent=None):
 		log.info(f"Initializing reddit class: user={user_name} prefix={prefix} no_post={no_post}")
 		self.no_post = no_post
 
