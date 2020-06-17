@@ -140,8 +140,8 @@ class Reddit:
 		return ReturnType.SUCCESS
 
 	def reply_comment(self, comment, body):
-		if comment.subreddit is not None and comment.subreddit in self.subreddits and \
-				self.subreddits[comment.subreddit].is_banned:
+		if comment.subreddit is not None and comment.subreddit.display_name in self.subreddits and \
+				self.subreddits[comment.subreddit.display_name].is_banned:
 			return None, ReturnType.FORBIDDEN
 		elif comment.link_id is not None and id_from_fullname(comment.link_id) in self.locked_threads:
 			return None, ReturnType.THREAD_LOCKED
