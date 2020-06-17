@@ -114,7 +114,7 @@ class RedditObject:
 
 class Reddit:
 	def __init__(self, user):
-		self.account_name = user
+		self.username = user
 		self.sent_messages = []
 		self.self_comments = []
 		self.all_comments = {}
@@ -136,7 +136,7 @@ class Reddit:
 		self.all_submissions[submission.id] = submission
 
 	def reply_message(self, message, body):
-		self.sent_messages.append(message.reply(body, self.account_name))
+		self.sent_messages.append(message.reply(body, self.username))
 		return ReturnType.SUCCESS
 
 	def reply_comment(self, comment, body):
@@ -148,12 +148,12 @@ class Reddit:
 		elif comment.id not in self.all_comments:
 			return None, ReturnType.DELETED_COMMENT
 		else:
-			new_comment = comment.reply(body, self.account_name)
+			new_comment = comment.reply(body, self.username)
 			self.add_comment(new_comment, True)
 			return new_comment.id, ReturnType.SUCCESS
 
 	def reply_submission(self, submission, body):
-		new_comment = submission.reply(body, self.account_name)
+		new_comment = submission.reply(body, self.username)
 		self.add_comment(new_comment, True)
 		return new_comment.id, ReturnType.SUCCESS
 
@@ -161,7 +161,7 @@ class Reddit:
 		message.mark_read()
 
 	def send_message(self, username, subject, body):
-		new_message = RedditObject(body, self.account_name, dest=username)
+		new_message = RedditObject(body, self.username, dest=username)
 		self.sent_messages.append(new_message)
 		return ReturnType.SUCCESS
 
