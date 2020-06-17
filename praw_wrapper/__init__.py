@@ -212,11 +212,11 @@ class Reddit:
 
 	def reply_comment(self, comment, body):
 		log.debug(f"Replying to comment: {comment.id}")
-		self.reply(comment, body)
+		return self.reply(comment, body)
 
 	def reply_submission(self, submission, body):
 		log.debug(f"Replying to submission: {submission.id}")
-		self.reply(submission, body)
+		return self.reply(submission, body)
 
 	def get_subreddit_submissions(self, subreddit_name):
 		log.debug(f"Getting subreddit submissions: {subreddit_name}")
