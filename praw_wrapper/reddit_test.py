@@ -1,10 +1,10 @@
-import discord_logging
+import logging.handlers
 import random
 from datetime import datetime, timezone
 
 from praw_wrapper import ReturnType, id_from_fullname
 
-log = discord_logging.get_logger()
+log = logging.getLogger("bot")
 
 
 def random_id():

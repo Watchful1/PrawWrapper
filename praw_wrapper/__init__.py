@@ -1,16 +1,17 @@
-import discord_logging
 import praw
 import prawcore
 import traceback
 import requests
+import logging.handlers
+import os
+import configparser
 from datetime import timedelta
 from datetime import datetime
 from enum import Enum
 import re
-import pytz
 
 
-log = discord_logging.get_logger()
+log = logging.getLogger("bot")
 
 
 def id_from_fullname(fullname):
@@ -50,19 +51,45 @@ class Queue:
 		return item in self.set
 
 
+def get_config():
+	config = configparser.ConfigParser()
+	if 'APPDATA' in os.environ:  # Windows
+		os_config_path = os.environ['APPDATA']
+	elif 'XDG_CONFIG_HOME' in os.environ:  # Modern Linux
+		os_config_path = os.environ['XDG_CONFIG_HOME']
+	elif 'HOME' in os.environ:  # Legacy Linux
+		os_config_path = os.path.join(os.environ['HOME'], '.config')
+	else:
+		raise FileNotFoundError("Could not find config")
+	os_config_path = os.path.join(os_config_path, 'praw.ini')
+	config.read(os_config_path)
+
+	return config
+
+
+def get_config_var(config, section, variable):
+	if section not in config:
+		raise ValueError(f"Section {section} not in config")
+
+	if variable not in config[section]:
+		raise ValueError(f"Variable {variable} not in section {section}")
+
+	return config[section][variable]
+
+
 class Reddit:
 	def __init__(self, user_name, no_post, prefix=None, user_agent=None):
 		log.info(f"Initializing reddit class: user={user_name} prefix={prefix} no_post={no_post}")
 		self.no_post = no_post
 
-		config = discord_logging.get_config()
+		config = get_config()
 		if prefix is None:
 			prefix = ''
 		else:
 			prefix = prefix + "_"
-		client_id = discord_logging.get_config_var(config, user_name, f"{prefix}client_id")
-		client_secret = discord_logging.get_config_var(config, user_name, f"{prefix}client_secret")
-		refresh_token = discord_logging.get_config_var(config, user_name, f"{prefix}refresh_token")
+		client_id = get_config_var(config, user_name, f"{prefix}client_id")
+		client_secret = get_config_var(config, user_name, f"{prefix}client_secret")
+		refresh_token = get_config_var(config, user_name, f"{prefix}refresh_token")
 		self.reddit = praw.Reddit(
 			user_name,
 			client_id=client_id,

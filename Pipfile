@@ -7,8 +7,6 @@ verify_ssl = true
 
 [packages]
 praw = "*"
-discord-logging = {git = "https://github.com/Watchful1/DiscordLogging.git"}
-pytz = "*"
 
 [requires]
 python_version = "3.7"

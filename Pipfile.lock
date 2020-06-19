@@ -1,7 +1,7 @@
 {
     "_meta": {
         "hash": {
-            "sha256": "0bcf8d83e24a6beccc7b09467ffb98ef17d9ce5a11d6b4f89d4483e0ebf718d1"
+            "sha256": "e1938eb1bd24706b0ba7fd775c4c4ddda64bbc7e7d5a1c2e1e8612908e559d8e"
         },
         "pipfile-spec": 6,
         "requires": {
@@ -30,10 +30,6 @@
             ],
             "version": "==3.0.4"
         },
-        "discord-logging": {
-            "git": "https://github.com/Watchful1/DiscordLogging.git",
-            "ref": "25306834745c982cbf325f98f0a3816f8860e20e"
-        },
         "idna": {
             "hashes": [
                 "sha256:7588d1c14ae4c77d74036e8c22ff447b26d0fde8f007354fd48a7814db15b7cb",
@@ -56,14 +52,6 @@
                 "sha256:cf71388d869becbcbdfd90258b19d2173c197a457f2dd0bef0566b6cfb9b95a1"
             ],
             "version": "==1.4.0"
-        },
-        "pytz": {
-            "hashes": [
-                "sha256:a494d53b6d39c3c6e44c3bec237336e14305e4f29bbf800b599253057fbb79ed",
-                "sha256:c35965d010ce31b23eeb663ed3cc8c906275d6be1a34393a1d73a41febf4a048"
-            ],
-            "index": "pypi",
-            "version": "==2020.1"
         },
         "requests": {
             "hashes": [
