@@ -5,7 +5,7 @@ with open("README.md", "r") as fh:
 
 setuptools.setup(
     name="praw-wrapper",
-    version="1.0.8",
+    version="1.0.9",
     author="Watchful One",
     author_email="watchful@watchful.gr",
     description="A wrapper around PRAW for easier unit testing",
@@ -13,6 +13,7 @@ setuptools.setup(
     long_description_content_type="text/markdown",
     url="https://github.com/Watchful1/PrawWrapper",
     packages=setuptools.find_packages(),
+    install_requires=["praw>=7.0.0"],
     classifiers=[
         "Programming Language :: Python :: 3",
         "License :: OSI Approved :: MIT License",
