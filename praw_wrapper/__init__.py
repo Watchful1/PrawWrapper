@@ -317,7 +317,7 @@ class Reddit:
 
 		result_comments = []
 		for comment in comments:
-			date_time = pytz.utc.localize(datetime.utcfromtimestamp(comment['created_utc']))
+			date_time = datetime.utcfromtimestamp(comment['created_utc'])
 			if last_seen > date_time:
 				break
 
