@@ -290,7 +290,7 @@ class Reddit:
 				json = requests.get(lag_url, headers={'User-Agent': self.user_agent}, timeout=10)
 				if json.status_code == 200:
 					comment_created = datetime.utcfromtimestamp(json.json()['data'][0]['created_utc'])
-					self.pushshift_lag = round((datetime.utcnow() - comment_created).seconds / 60, 0)
+					self.pushshift_lag = round((datetime.utcnow() - comment_created).total_seconds() / 60, 0)
 					self.pushshift_lag_checked = datetime.utcnow()
 
 			if self.timeout_warn_threshold > 1:
