@@ -90,12 +90,19 @@ class Reddit:
 		client_id = get_config_var(config, user_name, f"{prefix}client_id")
 		client_secret = get_config_var(config, user_name, f"{prefix}client_secret")
 		refresh_token = get_config_var(config, user_name, f"{prefix}refresh_token")
-		self.reddit = praw.Reddit(
-			user_name,
-			client_id=client_id,
-			client_secret=client_secret,
-			refresh_token=refresh_token,
-			user_agent=user_agent)
+		if user_agent is None:
+			self.reddit = praw.Reddit(
+				user_name,
+				client_id=client_id,
+				client_secret=client_secret,
+				refresh_token=refresh_token)
+		else:
+			self.reddit = praw.Reddit(
+				user_name,
+				client_id=client_id,
+				client_secret=client_secret,
+				refresh_token=refresh_token,
+				user_agent=user_agent)
 
 		self.username = self.reddit.user.me().name
 
@@ -272,32 +279,66 @@ class Reddit:
 			last_seen = last_seen + timedelta(seconds=1)
 
 		log.debug(f"Fetching comments for keyword: {keyword} : {last_seen.strftime('%Y-%m-%d %H:%M:%S')}")
-		url = f"https://api.pushshift.io/reddit/comment/search?q={keyword}&limit=100&sort=desc"
+		base_url = "https://api.pushshift.io/reddit/comment/search?q={}&limit={}&sort=desc{}"
 		lag_url = "https://api.pushshift.io/reddit/comment/search?limit=1&sort=desc"
 		try:
-			response = requests.get(url, headers={'User-Agent': self.user_agent}, timeout=10)
-			if response.status_code != 200:
-				self.consecutive_timeouts += 1
-				if self.consecutive_timeouts >= pow(self.timeout_warn_threshold, 2) * 5:
-					log.warning(f"{self.consecutive_timeouts} consecutive timeouts for search term: {keyword}")
-					self.timeout_warn_threshold += 1
-				return []
-			comments = response.json()['data']
-
 			if self.pushshift_lag_checked is None or \
 					datetime.utcnow() - timedelta(minutes=10) > self.pushshift_lag_checked:
 				log.debug("Updating pushshift comment lag")
-				json = requests.get(lag_url, headers={'User-Agent': self.user_agent}, timeout=10)
+				json = requests.get(lag_url, headers={'User-Agent': self.user_agent}, timeout=2)
 				if json.status_code == 200:
 					comment_created = datetime.utcfromtimestamp(json.json()['data'][0]['created_utc'])
 					self.pushshift_lag = round((datetime.utcnow() - comment_created).total_seconds() / 60, 0)
 					self.pushshift_lag_checked = datetime.utcnow()
 
-			if self.timeout_warn_threshold > 1:
-				log.warning(f"Recovered from timeouts after {self.consecutive_timeouts} attempts")
+			result_comments = []
+			before_timestamp = None
+			while True:
+				url = base_url.format(
+					keyword,
+					"1000" if before_timestamp is not None else "100",
+					f"&before={before_timestamp}" if before_timestamp is not None else ""
+				)
+				response = requests.get(url, headers={'User-Agent': self.user_agent}, timeout=10)
+				if response.status_code != 200:
+					self.consecutive_timeouts += 1
+					if self.consecutive_timeouts >= pow(self.timeout_warn_threshold, 2) * 5:
+						log.warning(f"{self.consecutive_timeouts} consecutive timeouts for search term: {keyword}")
+						self.timeout_warn_threshold += 1
+					return []
+				comments = response.json()['data']
 
-			self.consecutive_timeouts = 0
-			self.timeout_warn_threshold = 1
+				if self.timeout_warn_threshold > 1:
+					log.warning(f"Recovered from timeouts after {self.consecutive_timeouts} attempts")
+
+				self.consecutive_timeouts = 0
+				self.timeout_warn_threshold = 1
+
+				if not len(comments):
+					log.warning(f"No comments found for search term: {keyword}")
+					return []
+
+				found_seen = False
+				comment_datetime = None
+				for comment in comments:
+					comment_datetime = datetime.utcfromtimestamp(comment['created_utc'])
+					before_timestamp = comment['created_utc']
+					if last_seen > comment_datetime:
+						found_seen = True
+						break
+
+					if not self.processed_comments.contains(comment['id']):
+						result_comments.append(comment)
+
+				if found_seen:
+					break
+				else:
+					log.warning(
+						f"Hit end of comments search: {last_seen.strftime('%Y-%m-%d %H:%M:%S')} : "
+						f"{comment_datetime.strftime('%Y-%m-%d %H:%M:%S')}")
+
+			log.debug(f"Found comments: {len(result_comments)}")
+			return result_comments
 
 		except requests.exceptions.ReadTimeout:
 			self.consecutive_timeouts += 1
@@ -310,22 +351,6 @@ class Reddit:
 			log.warning(f"Could not parse data for search term: {keyword}")
 			log.warning(traceback.format_exc())
 			return []
-
-		if not len(comments):
-			log.warning(f"No comments found for search term: {keyword}")
-			return []
-
-		result_comments = []
-		for comment in comments:
-			date_time = datetime.utcfromtimestamp(comment['created_utc'])
-			if last_seen > date_time:
-				break
-
-			if not self.processed_comments.contains(comment['id']):
-				result_comments.append(comment)
-
-		log.debug(f"Found comments: {len(result_comments)}")
-		return result_comments
 
 	def mark_keyword_comment_processed(self, comment_id):
 		self.processed_comments.put(comment_id)
