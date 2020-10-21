@@ -34,6 +34,12 @@ class ReturnType(Enum):
 	NOT_WHITELISTED_BY_USER_MESSAGE = 13
 
 
+class PushshiftType(Enum):
+	PROD = 1
+	BETA = 2
+	AUTO = 3
+
+
 class Queue:
 	def __init__(self, max_size):
 		self.list = []
@@ -77,8 +83,64 @@ def get_config_var(config, section, variable):
 	return config[section][variable]
 
 
+class PushshiftClient:
+	def __init__(self, base_url, limit_keyword, name):
+		self.base_url = base_url
+		self.limit_keyword = limit_keyword
+		self.name = name
+		self.latest = None
+		self.lag_checked = None
+		self.failed = False
+
+	def __str__(self):
+		return f"Pushshift client: {self.name}"
+
+	def get_url(self, keyword, limit, before):
+		bldr = [self.base_url, "?"]
+		if keyword is not None:
+			bldr.append("q=")
+			bldr.append(keyword)
+			bldr.append("&")
+		if limit is not None:
+			bldr.append(self.limit_keyword)
+			bldr.append("=")
+			bldr.append(str(limit))
+			bldr.append("&")
+		if before is not None:
+			bldr.append("before=")
+			bldr.append(before)
+			bldr.append("&")
+		bldr.append("sort=desc")
+		return ''.join(bldr)
+
+	def get_comments(self, keyword, limit, before, user_agent):
+		url = self.get_url(keyword, limit, before)
+		try:
+			json = requests.get(url, headers={'User-Agent': user_agent}, timeout=10)
+			if json.status_code == 200:
+				self.failed = False
+				return json.json()['data']
+			else:
+				self.failed = True
+				return None
+		except Exception as err:
+			self.failed = True
+			return None
+
+	def check_lag(self, user_agent):
+		comments = self.get_comments(None, 1, None, user_agent)
+		if comments is None or len(comments) == 0:
+			log.info(f"Failed to get pushshift {self.name} lag")
+		else:
+			self.latest = datetime.utcfromtimestamp(comments[0]['created_utc'])
+			self.lag_checked = datetime.utcnow()
+
+	def lag_seconds(self):
+		return int(round((datetime.utcnow() - self.latest).total_seconds(), 0))
+
+
 class Reddit:
-	def __init__(self, user_name, no_post, prefix=None, user_agent=None):
+	def __init__(self, user_name, no_post, prefix=None, user_agent=None, pushshift_client=PushshiftType.PROD):
 		log.info(f"Initializing reddit class: user={user_name} prefix={prefix} no_post={no_post}")
 		self.no_post = no_post
 
@@ -114,10 +176,13 @@ class Reddit:
 			self.user_agent = user_agent
 
 		self.processed_comments = Queue(100)
-		self.consecutive_timeouts = 0
-		self.timeout_warn_threshold = 1
-		self.pushshift_lag = 0
-		self.pushshift_lag_checked = None
+
+		self.pushshift_client_type = pushshift_client
+
+		self.pushshift_prod_client = PushshiftClient("https://api.pushshift.io/reddit/comment/search", "limit", "prod")
+		self.pushshift_beta_client = PushshiftClient("https://beta.pushshift.io/search/reddit/comments", "size", "beta")
+
+		self.check_pushshift_lag(True)
 
 	def run_function(self, function, arguments):
 		output = None
@@ -274,45 +339,57 @@ class Reddit:
 		except Exception:
 			return None
 
+	def check_pushshift_lag(self, force=False):
+		for client in [self.pushshift_prod_client, self.pushshift_beta_client]:
+			if force or client.lag_checked is None or datetime.utcnow() - timedelta(minutes=2) > client.lag_checked:
+				client.check_lag(self.user_agent)
+
+	def get_pushshift_client(self):
+		if self.pushshift_client_type == PushshiftType.PROD:
+			return self.pushshift_prod_client
+		elif self.pushshift_client_type == PushshiftType.BETA:
+			return self.pushshift_beta_client
+		elif self.pushshift_client_type == PushshiftType.AUTO:
+			if self.pushshift_beta_client.failed:
+				return self.pushshift_prod_client
+			elif self.pushshift_prod_client.failed:
+				return self.pushshift_beta_client
+			elif self.pushshift_prod_client.latest is not None and self.pushshift_beta_client.latest is not None:
+				if self.pushshift_prod_client.lag_seconds() < 10:
+					return self.pushshift_prod_client
+				elif self.pushshift_prod_client.lag_seconds() < self.pushshift_beta_client.lag_seconds():
+					return self.pushshift_prod_client
+				else:
+					return self.pushshift_beta_client
+			else:
+				return self.pushshift_prod_client
+		else:
+			return self.pushshift_prod_client
+
 	def get_keyword_comments(self, keyword, last_seen):
 		if not len(self.processed_comments.list):
 			last_seen = last_seen + timedelta(seconds=1)
 
 		log.debug(f"Fetching comments for keyword: {keyword} : {last_seen.strftime('%Y-%m-%d %H:%M:%S')}")
-		base_url = "https://api.pushshift.io/reddit/comment/search?q={}&limit={}&sort=desc{}"
-		lag_url = "https://api.pushshift.io/reddit/comment/search?limit=1&sort=desc"
-		try:
-			if self.pushshift_lag_checked is None or \
-					datetime.utcnow() - timedelta(minutes=10) > self.pushshift_lag_checked:
-				log.debug("Updating pushshift comment lag")
-				json = requests.get(lag_url, headers={'User-Agent': self.user_agent}, timeout=2)
-				if json.status_code == 200:
-					comment_created = datetime.utcfromtimestamp(json.json()['data'][0]['created_utc'])
-					self.pushshift_lag = round((datetime.utcnow() - comment_created).total_seconds() / 60, 0)
-					self.pushshift_lag_checked = datetime.utcnow()
 
+		self.check_pushshift_lag(False)
+
+		client = self.get_pushshift_client()
+		log.debug(f"Using pushshift {client.name} client")
+
+		try:
 			result_comments = []
 			before_timestamp = None
+
 			while True:
-				url = base_url.format(
+				comments = client.get_comments(
 					keyword,
-					"1000" if before_timestamp is not None else "100",
-					f"&before={before_timestamp}" if before_timestamp is not None else ""
+					1000 if before_timestamp is not None else 100,
+					before_timestamp,
+					self.user_agent
 				)
-				response = requests.get(url, headers={'User-Agent': self.user_agent}, timeout=10)
-				if response.status_code != 200:
-					self.consecutive_timeouts += 1
-					if self.consecutive_timeouts >= pow(self.timeout_warn_threshold, 2) * 5:
-						log.warning(f"{self.consecutive_timeouts} consecutive timeouts for search term: {keyword}")
-						self.timeout_warn_threshold += 1
+				if comments is None:
 					return []
-				comments = response.json()['data']
-
-				if self.timeout_warn_threshold > 1:
-					log.warning(f"Recovered from timeouts after {self.consecutive_timeouts} attempts")
-
-				self.consecutive_timeouts = 0
-				self.timeout_warn_threshold = 1
 
 				if not len(comments):
 					log.warning(f"No comments found for search term: {keyword}")
@@ -340,15 +417,8 @@ class Reddit:
 			log.debug(f"Found comments: {len(result_comments)}")
 			return result_comments
 
-		except requests.exceptions.ReadTimeout:
-			self.consecutive_timeouts += 1
-			if self.consecutive_timeouts >= pow(self.timeout_warn_threshold, 2) * 5:
-				log.warning(f"{self.consecutive_timeouts} consecutive timeouts for search term: {keyword}")
-				self.timeout_warn_threshold += 1
-			return []
-
 		except Exception as err:
-			log.warning(f"Could not parse data for search term: {keyword}")
+			log.warning(f"Uncaught pushshift error: {err}")
 			log.warning(traceback.format_exc())
 			return []
 
