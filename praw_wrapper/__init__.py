@@ -403,10 +403,8 @@ class Reddit:
 					before_timestamp,
 					self.user_agent
 				)
-				if comments is None:
-					return []
 
-				if not len(comments):
+				if comments is None or not len(comments):
 					log.warning(f"No comments found for search term: {keyword}")
 					return []
 
