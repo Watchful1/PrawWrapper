@@ -138,6 +138,9 @@ class PushshiftClient:
 	def lag_seconds(self):
 		return int(round((datetime.utcnow() - self.latest).total_seconds(), 0))
 
+	def lag_minutes(self):
+		return int(self.lag_seconds() / 60)
+
 
 class Reddit:
 	def __init__(self, user_name, no_post, prefix=None, user_agent=None, pushshift_client=PushshiftType.PROD):
@@ -168,7 +171,7 @@ class Reddit:
 
 		self.username = self.reddit.user.me().name
 
-		log.info(f"Logged into reddit as u/{self.username} {prefix} : using pushshift client {pushshift_client}")
+		log.info(f"Logged into reddit as u/{self.username} {prefix}: using pushshift client {pushshift_client}")
 
 		if user_agent is None:
 			self.user_agent = self.reddit.config.user_agent
@@ -344,6 +347,16 @@ class Reddit:
 		for client in [self.pushshift_prod_client, self.pushshift_beta_client]:
 			if force or client.lag_checked is None or datetime.utcnow() - timedelta(minutes=2) > client.lag_checked:
 				client.check_lag(self.user_agent)
+
+	def get_effective_pushshift_lag(self):
+		if self.recent_pushshift_client is None:
+			return 0
+		elif self.recent_pushshift_client == PushshiftType.PROD:
+			return self.pushshift_prod_client.lag_minutes()
+		elif self.recent_pushshift_client == PushshiftType.BETA:
+			return self.pushshift_beta_client.lag_minutes()
+		else:
+			return 0
 
 	def get_pushshift_client(self):
 		if self.pushshift_client_type == PushshiftType.PROD:
