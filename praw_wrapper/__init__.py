@@ -383,6 +383,11 @@ class Reddit:
 		else:
 			return self.pushshift_prod_client
 
+	def set_recent_pushshift_client(self, new_client_type):
+		if self.recent_pushshift_client is not None and self.recent_pushshift_client != new_client_type:
+			log.warning(f"Switching pushshift client from {self.recent_pushshift_client} to {new_client_type}")
+		self.recent_pushshift_client = new_client_type
+
 	def get_keyword_comments(self, keyword, last_seen):
 		if not len(self.processed_comments.list):
 			last_seen = last_seen + timedelta(seconds=1)
@@ -392,7 +397,7 @@ class Reddit:
 		self.check_pushshift_lag(False)
 
 		client = self.get_pushshift_client()
-		self.recent_pushshift_client = client.client_type
+		self.set_recent_pushshift_client(client.client_type)
 		log.debug(f"Using pushshift {client.client_type} client")
 
 		try:
