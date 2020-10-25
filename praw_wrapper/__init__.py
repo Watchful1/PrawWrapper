@@ -84,9 +84,10 @@ def get_config_var(config, section, variable):
 
 
 class PushshiftClient:
-	def __init__(self, base_url, limit_keyword, client_type):
+	def __init__(self, base_url, limit_keyword, client_type, max_limit=1000):
 		self.base_url = base_url
 		self.limit_keyword = limit_keyword
+		self.max_limit = max_limit
 		self.client_type = client_type
 		self.latest = None
 		self.lag_checked = None
@@ -104,7 +105,7 @@ class PushshiftClient:
 		if limit is not None:
 			bldr.append(self.limit_keyword)
 			bldr.append("=")
-			bldr.append(str(limit))
+			bldr.append(str(min(limit, self.max_limit)))
 			bldr.append("&")
 		if before is not None:
 			bldr.append("before=")
@@ -183,8 +184,10 @@ class Reddit:
 		self.pushshift_client_type = pushshift_client
 		self.recent_pushshift_client = None
 
-		self.pushshift_prod_client = PushshiftClient("https://api.pushshift.io/reddit/comment/search", "limit", PushshiftType.PROD)
-		self.pushshift_beta_client = PushshiftClient("https://beta.pushshift.io/search/reddit/comments", "size", PushshiftType.BETA)
+		self.pushshift_prod_client = PushshiftClient(
+			"https://api.pushshift.io/reddit/comment/search", "limit", PushshiftType.PROD, max_limit=1000)
+		self.pushshift_beta_client = PushshiftClient(
+			"https://beta.pushshift.io/search/reddit/comments", "size", PushshiftType.BETA, max_limit=250)
 
 		self.check_pushshift_lag(True)
 
