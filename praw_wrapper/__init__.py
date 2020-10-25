@@ -136,7 +136,7 @@ class PushshiftClient:
 			self.lag_checked = datetime.utcnow()
 
 	def lag_seconds(self):
-		return int(round((datetime.utcnow() - self.latest).total_seconds(), 0))
+		return max(int(round((self.lag_checked - self.latest).total_seconds(), 0)), 0)
 
 	def lag_minutes(self):
 		return int(self.lag_seconds() / 60)
