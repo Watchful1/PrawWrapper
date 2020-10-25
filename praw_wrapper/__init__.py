@@ -423,6 +423,10 @@ class Reddit:
 						result_comments.append(comment)
 
 				if found_seen:
+					if len(result_comments) > 100:
+						log.warning(
+							f"Found {len(result_comments)} from {comment_datetime.strftime('%Y-%m-%d %H:%M:%S')}"
+							f" to {datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S')}")
 					break
 				else:
 					log.warning(
