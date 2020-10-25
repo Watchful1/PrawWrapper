@@ -234,3 +234,6 @@ class Reddit:
 			return self.users[user_name].created_utc
 		else:
 			return None
+
+	def get_effective_pushshift_lag(self):
+		return 0

@@ -171,7 +171,7 @@ class Reddit:
 
 		self.username = self.reddit.user.me().name
 
-		log.info(f"Logged into reddit as u/{self.username} {prefix}: using pushshift client {pushshift_client}")
+		log.info(f"Logged into reddit as u/{self.username} {prefix}: {pushshift_client}")
 
 		if user_agent is None:
 			self.user_agent = self.reddit.config.user_agent
