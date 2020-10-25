@@ -108,7 +108,7 @@ class PushshiftClient:
 			bldr.append("&")
 		if before is not None:
 			bldr.append("before=")
-			bldr.append(before)
+			bldr.append(str(before))
 			bldr.append("&")
 		bldr.append("sort=desc")
 		return ''.join(bldr)
