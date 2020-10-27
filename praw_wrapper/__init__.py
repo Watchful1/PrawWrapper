@@ -372,8 +372,8 @@ class Reddit:
 			elif self.pushshift_prod_client.failed:
 				return self.pushshift_beta_client
 			elif self.pushshift_prod_client.latest is not None and self.pushshift_beta_client.latest is not None:
-				if self.pushshift_prod_client.lag_seconds() < 10:
-					return self.pushshift_prod_client
+				if self.pushshift_beta_client.lag_seconds() < 60:
+					return self.pushshift_beta_client
 				elif self.pushshift_prod_client.lag_seconds() < self.pushshift_beta_client.lag_seconds():
 					return self.pushshift_prod_client
 				else:
