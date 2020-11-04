@@ -122,13 +122,13 @@ class PushshiftClient:
 			json = requests.get(url, headers={'User-Agent': user_agent}, timeout=10)
 			if json.status_code == 200:
 				self.failed = False
-				return json.json()['data']
+				return json.json()['data'], None
 			else:
 				self.failed = True
-				return None
+				return None, f"Pushshift bad status: {json.status_code}"
 		except Exception as err:
 			self.failed = True
-			return None
+			return None, f"Pushshift parse exception: {type(err).__name__} : {err}"
 
 	def check_lag(self, user_agent):
 		comments = self.get_comments(None, 1, None, user_agent)
@@ -139,6 +139,8 @@ class PushshiftClient:
 			self.lag_checked = datetime.utcnow()
 
 	def lag_seconds(self):
+		if self.lag_checked is None or self.latest is None:
+			return 0
 		return max(int(round((self.lag_checked - self.latest).total_seconds(), 0)), 0)
 
 	def lag_minutes(self):
@@ -369,19 +371,21 @@ class Reddit:
 		elif self.pushshift_client_type == PushshiftType.BETA:
 			return self.pushshift_beta_client
 		elif self.pushshift_client_type == PushshiftType.AUTO:
-			if self.pushshift_beta_client.failed:
-				return self.pushshift_prod_client
-			elif self.pushshift_prod_client.failed:
-				return self.pushshift_beta_client
-			elif self.pushshift_prod_client.latest is not None and self.pushshift_beta_client.latest is not None:
-				if self.pushshift_beta_client.lag_seconds() < 60:
+			if self.pushshift_prod_client.failed or self.pushshift_beta_client.failed:
+				if self.pushshift_beta_client.lag_seconds() < 600:
+					return self.pushshift_beta_client
+				elif self.pushshift_prod_client.lag_seconds() < 600:
 					return self.pushshift_beta_client
 				elif self.pushshift_prod_client.lag_seconds() < self.pushshift_beta_client.lag_seconds():
 					return self.pushshift_prod_client
 				else:
 					return self.pushshift_beta_client
-			else:
+			elif self.pushshift_beta_client.lag_seconds() < 120:
+				return self.pushshift_beta_client
+			elif self.pushshift_prod_client.lag_seconds() < self.pushshift_beta_client.lag_seconds():
 				return self.pushshift_prod_client
+			else:
+				return self.pushshift_beta_client
 		else:
 			return self.pushshift_prod_client
 
@@ -407,14 +411,18 @@ class Reddit:
 			before_timestamp = None
 
 			while True:
-				comments = client.get_comments(
+				comments, result_message = client.get_comments(
 					keyword,
 					1000 if before_timestamp is not None else 100,
 					before_timestamp,
 					self.user_agent
 				)
 
-				if comments is None or not len(comments):
+				if comments is None:
+					log.warning(f"Pushshift client error : {client.client_type} : {result_message}")
+					return []
+
+				if not len(comments):
 					log.warning(f"No comments found for search term: {keyword}")
 					return []
 
