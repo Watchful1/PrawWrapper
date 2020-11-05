@@ -128,7 +128,10 @@ class PushshiftClient:
 				return None, f"Pushshift bad status: {json.status_code}"
 		except Exception as err:
 			self.failed = True
-			return None, f"Pushshift parse exception: {type(err).__name__} : {err}"
+			if isinstance(err, requests.exceptions.ReadTimeout):
+				return None, None
+			else:
+				return None, f"Pushshift parse exception: {type(err).__name__} : {err}"
 
 	def check_lag(self, user_agent):
 		comments, result_message = self.get_comments(None, 1, None, user_agent)
@@ -419,7 +422,8 @@ class Reddit:
 				)
 
 				if comments is None:
-					log.warning(f"Pushshift client error : {client.client_type} : {result_message}")
+					if result_message is not None:
+						log.warning(f"Pushshift client error : {client.client_type} : {result_message}")
 					return []
 
 				if not len(comments):
