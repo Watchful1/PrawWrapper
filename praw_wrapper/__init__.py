@@ -137,6 +137,9 @@ class PushshiftClient:
 		comments, result_message = self.get_comments(None, 1, None, user_agent)
 		if comments is None or len(comments) == 0:
 			log.info(f"Failed to get pushshift {self.client_type} lag")
+			self.lag_checked = datetime.utcnow()
+			if self.latest is None:
+				self.latest = datetime.utcnow()
 		else:
 			self.latest = datetime.utcfromtimestamp(comments[0]['created_utc'])
 			self.lag_checked = datetime.utcnow()
