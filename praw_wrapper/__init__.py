@@ -154,7 +154,7 @@ class PushshiftClient:
 
 
 class Reddit:
-	def __init__(self, user_name, no_post, prefix=None, user_agent=None, pushshift_client=PushshiftType.PROD):
+	def __init__(self, user_name, no_post, prefix=None, user_agent=None, pushshift_client=PushshiftType.PROD, init_pushshift_lag=False):
 		log.info(f"Initializing reddit class: user={user_name} prefix={prefix} no_post={no_post}")
 		self.no_post = no_post
 
@@ -199,7 +199,8 @@ class Reddit:
 		self.pushshift_beta_client = PushshiftClient(
 			"https://beta.pushshift.io/search/reddit/comments", "size", "max_created_utc", PushshiftType.BETA, max_limit=250)
 
-		self.check_pushshift_lag(True)
+		if init_pushshift_lag:
+			self.check_pushshift_lag(True)
 
 	def run_function(self, function, arguments):
 		output = None
