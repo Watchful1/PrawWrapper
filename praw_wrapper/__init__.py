@@ -357,6 +357,10 @@ class Reddit:
 		except Exception:
 			return None
 
+	def call_info(self, fullnames):
+		log.debug(f"Fetching {len(fullnames)} ids from info")
+		return self.reddit.info(fullnames)
+
 	def check_pushshift_lag(self, force=False):
 		for client in [self.pushshift_prod_client, self.pushshift_beta_client]:
 			if force or client.lag_checked is None or datetime.utcnow() - timedelta(minutes=2) > client.lag_checked:

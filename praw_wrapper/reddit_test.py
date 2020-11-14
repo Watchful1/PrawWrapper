@@ -237,3 +237,13 @@ class Reddit:
 
 	def get_effective_pushshift_lag(self):
 		return 0
+
+	def call_info(self, fullnames):
+		results = []
+		for fullname in fullnames:
+			if fullname[:3] == "t3_" and fullname[3:] in self.all_submissions:
+				results.append(self.all_submissions[fullname[3:]])
+			elif fullname[:3] == "t1_" and fullname[3:] in self.all_comments:
+				results.append(self.all_comments[fullname[3:]])
+
+		return results
