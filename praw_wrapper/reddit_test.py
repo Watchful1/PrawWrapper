@@ -78,6 +78,7 @@ class RedditObject:
 		self.parent = None
 		self.children = []
 		self.title = title
+		self.removed_by_category = None
 
 	def get_pushshift_dict(self):
 		return {
@@ -110,6 +111,14 @@ class RedditObject:
 		new_message.parent = self
 		self.children.append(new_message)
 		return new_message
+
+	def set_title(self, new_title):
+		if self.title is None:
+			self.title = new_title
+
+	def set_removed_by_category(self, removed_by_category):
+		if self.removed_by_category is None:
+			self.removed_by_category = removed_by_category
 
 
 class Reddit:
