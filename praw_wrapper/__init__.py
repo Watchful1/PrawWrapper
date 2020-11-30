@@ -438,7 +438,7 @@ class Reddit:
 				)
 
 				if comments is None:
-					if result_message is not None and client.failures > 4 and client.failures % 5 == 0:
+					if result_message is not None and client.failures >= 5 and client.failures % 5 == 0:
 						log.warning(f"Pushshift client error, {client.failures} : {client.client_type} : {result_message}")
 					return []
 
