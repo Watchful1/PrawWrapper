@@ -9,6 +9,7 @@ from datetime import timedelta
 from datetime import datetime
 from enum import Enum
 import re
+import time
 
 
 log = logging.getLogger("bot")
@@ -92,10 +93,14 @@ class PushshiftClient:
 		self.client_type = client_type
 		self.latest = None
 		self.lag_checked = None
-		self.failed = False
+		self.failures = 0
+		self.request_seconds = None
 
 	def __str__(self):
 		return f"Pushshift client: {self.client_type}"
+
+	def failed(self):
+		return self.failures > 0
 
 	def get_url(self, keyword, limit, before):
 		bldr = [self.base_url, "?"]
@@ -121,26 +126,29 @@ class PushshiftClient:
 		try:
 			json = requests.get(url, headers={'User-Agent': user_agent}, timeout=10)
 			if json.status_code == 200:
-				self.failed = False
+				self.failures = 0
 				return json.json()['data'], None
 			else:
-				self.failed = True
+				self.failures += 1
 				return None, f"Pushshift bad status: {json.status_code}"
 		except Exception as err:
-			self.failed = True
+			self.failures += 1
 			if isinstance(err, requests.exceptions.ReadTimeout):
 				return None, None
 			else:
 				return None, f"Pushshift parse exception: {type(err).__name__} : {err}"
 
 	def check_lag(self, user_agent):
+		start_time = time.perf_counter()
 		comments, result_message = self.get_comments(None, 1, None, user_agent)
 		if comments is None or len(comments) == 0:
 			log.info(f"Failed to get pushshift {self.client_type} lag")
+			self.request_seconds = 10
 			self.lag_checked = datetime.utcnow()
 			if self.latest is None:
 				self.latest = datetime.utcnow()
 		else:
+			self.request_seconds = round(time.perf_counter() - start_time, 2)
 			self.latest = datetime.utcfromtimestamp(comments[0]['created_utc'])
 			self.lag_checked = datetime.utcnow()
 
@@ -382,7 +390,7 @@ class Reddit:
 		elif self.pushshift_client_type == PushshiftType.BETA:
 			return self.pushshift_beta_client
 		elif self.pushshift_client_type == PushshiftType.AUTO:
-			if self.pushshift_prod_client.failed or self.pushshift_beta_client.failed:
+			if self.pushshift_prod_client.failed() or self.pushshift_beta_client.failed():
 				if self.pushshift_beta_client.lag_seconds() < 600:
 					return self.pushshift_beta_client
 				elif self.pushshift_prod_client.lag_seconds() < 600:
