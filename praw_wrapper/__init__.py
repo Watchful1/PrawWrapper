@@ -438,8 +438,8 @@ class Reddit:
 				)
 
 				if comments is None:
-					if result_message is not None:
-						log.warning(f"Pushshift client error : {client.client_type} : {result_message}")
+					if result_message is not None and client.failures > 4 and client.failures % 5 == 0:
+						log.warning(f"Pushshift client error, {client.failures} : {client.client_type} : {result_message}")
 					return []
 
 				if not len(comments):
