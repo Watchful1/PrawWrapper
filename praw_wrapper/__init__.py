@@ -134,7 +134,7 @@ class PushshiftClient:
 		except Exception as err:
 			self.failures += 1
 			if isinstance(err, requests.exceptions.ReadTimeout):
-				return None, None
+				return None, f"Pushshift read timeout"
 			else:
 				return None, f"Pushshift parse exception: {type(err).__name__} : {err}"
 
