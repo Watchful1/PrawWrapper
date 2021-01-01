@@ -394,7 +394,7 @@ class Reddit:
 				if self.pushshift_beta_client.lag_seconds() < 600:
 					return self.pushshift_beta_client
 				elif self.pushshift_prod_client.lag_seconds() < 600:
-					return self.pushshift_beta_client
+					return self.pushshift_prod_client
 				elif self.pushshift_prod_client.lag_seconds() < self.pushshift_beta_client.lag_seconds():
 					return self.pushshift_prod_client
 				else:
