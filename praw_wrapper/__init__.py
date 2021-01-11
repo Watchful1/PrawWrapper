@@ -162,7 +162,7 @@ class PushshiftClient:
 
 
 class Reddit:
-	def __init__(self, user_name, no_post, prefix=None, user_agent=None, pushshift_client=PushshiftType.PROD, init_pushshift_lag=False):
+	def __init__(self, user_name, no_post=False, prefix=None, user_agent=None, pushshift_client=PushshiftType.PROD, init_pushshift_lag=False):
 		log.info(f"Initializing reddit class: user={user_name} prefix={prefix} no_post={no_post}")
 		self.no_post = no_post
 
@@ -277,6 +277,8 @@ class Reddit:
 		except (prawcore.exceptions.Redirect, prawcore.exceptions.NotFound):
 			return False
 		except prawcore.exceptions.Forbidden:
+			return False
+		except prawcore.exceptions.BadRequest:
 			return False
 		return True
 
