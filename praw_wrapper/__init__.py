@@ -50,7 +50,10 @@ class Queue:
 	def put(self, item):
 		if len(self.list) >= self.max_size:
 			removed_item = self.list.pop(0)
-			self.set.remove(removed_item)
+			if removed_item not in self.set:
+				log.warning(f"{removed_item} not in set when removing")
+			else:
+				self.set.remove(removed_item)
 		self.list.append(item)
 		self.set.add(item)
 
