@@ -97,6 +97,7 @@ class PushshiftClient:
 		self.latest = None
 		self.lag_checked = None
 		self.failures = 0
+		self.failures_threshold = 5
 		self.request_seconds = None
 
 	def __str__(self):
@@ -130,6 +131,7 @@ class PushshiftClient:
 			json = requests.get(url, headers={'User-Agent': user_agent}, timeout=10)
 			if json.status_code == 200:
 				self.failures = 0
+				self.failures_threshold = 5
 				return json.json()['data'], None
 			else:
 				self.failures += 1
@@ -443,8 +445,9 @@ class Reddit:
 				)
 
 				if comments is None:
-					if result_message is not None and client.failures >= 5 and client.failures % 5 == 0:
+					if result_message is not None and client.failures >= client.failures_threshold:
 						log.warning(f"Pushshift client error, {client.failures} : {client.client_type} : {result_message}")
+						client.failures_threshold = client.failures_threshold * 2
 					return []
 
 				if not len(comments):
