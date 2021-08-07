@@ -89,12 +89,13 @@ def get_config_var(config, section, variable):
 
 
 class PushshiftClient:
-	def __init__(self, base_url, limit_keyword, before_keyword, client_type, max_limit=1000):
+	def __init__(self, base_url, limit_keyword, before_keyword, client_type, max_limit=1000, lag_keyword=None):
 		self.base_url = base_url
 		self.limit_keyword = limit_keyword
 		self.before_keyword = before_keyword
 		self.max_limit = max_limit
 		self.client_type = client_type
+		self.lag_keyword = lag_keyword
 		self.latest = None
 		self.lag_checked = None
 		self.failures = 0
@@ -146,7 +147,7 @@ class PushshiftClient:
 
 	def check_lag(self, user_agent):
 		start_time = time.perf_counter()
-		comments, result_message = self.get_comments(None, 1, None, user_agent)
+		comments, result_message = self.get_comments(self.lag_keyword, 1, None, user_agent)
 		if comments is None or len(comments) == 0:
 			log.info(f"Failed to get pushshift {self.client_type} lag")
 			self.request_seconds = 10
@@ -209,7 +210,7 @@ class Reddit:
 		self.recent_pushshift_client = None
 
 		self.pushshift_prod_client = PushshiftClient(
-			"https://api.pushshift.io/reddit/comment/search", "limit", "before", PushshiftType.PROD, max_limit=1000)
+			"https://api.pushshift.io/reddit/comment/search", "limit", "before", PushshiftType.PROD, max_limit=1000, lag_keyword="*")
 		self.pushshift_beta_client = PushshiftClient(
 			"https://beta.pushshift.io/search/reddit/comments", "size", "max_created_utc", PushshiftType.BETA, max_limit=250)
 
