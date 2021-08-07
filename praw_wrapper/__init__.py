@@ -127,10 +127,10 @@ class PushshiftClient:
 		bldr.append("sort=desc")
 		return ''.join(bldr)
 
-	def get_comments(self, keyword, limit, before, user_agent):
+	def get_comments(self, keyword, limit, before, user_agent, timeout=10):
 		url = self.get_url(keyword, limit, before)
 		try:
-			json = requests.get(url, headers={'User-Agent': user_agent}, timeout=10)
+			json = requests.get(url, headers={'User-Agent': user_agent}, timeout=timeout)
 			if json.status_code == 200:
 				self.failures = 0
 				self.failures_threshold = 5
@@ -147,7 +147,7 @@ class PushshiftClient:
 
 	def check_lag(self, user_agent):
 		start_time = time.perf_counter()
-		comments, result_message = self.get_comments(self.lag_keyword, 1, None, user_agent)
+		comments, result_message = self.get_comments(self.lag_keyword, 1, None, user_agent, timeout=30)
 		if comments is None or len(comments) == 0:
 			log.info(f"Failed to get pushshift {self.client_type} lag")
 			self.request_seconds = 10
