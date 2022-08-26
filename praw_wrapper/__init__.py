@@ -382,8 +382,16 @@ class Reddit:
 		log.debug(f"Fetching {len(fullnames)} ids from info")
 		return self.reddit.info(fullnames)
 
+	def get_active_clients(self):
+		if self.pushshift_client_type == PushshiftType.PROD:
+			return [self.pushshift_prod_client]
+		elif self.pushshift_client_type == PushshiftType.BETA:
+			return [self.pushshift_beta_client]
+		else:
+			return [self.pushshift_prod_client, self.pushshift_beta_client]
+
 	def check_pushshift_lag(self, force=False):
-		for client in [self.pushshift_prod_client, self.pushshift_beta_client]:
+		for client in self.get_active_clients():
 			if force or client.lag_checked is None or datetime.utcnow() - timedelta(minutes=2) > client.lag_checked:
 				client.check_lag(self.user_agent)
 
