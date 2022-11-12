@@ -93,7 +93,7 @@ def get_config_var(config, section, variable):
 
 
 class PushshiftClient:
-	def __init__(self, base_url, limit_keyword, before_keyword, after_keyword, client_type, max_limit=1000, lag_keyword=None):
+	def __init__(self, base_url, limit_keyword, before_keyword, after_keyword, client_type, max_limit=1000, lag_keyword=None, debug=False):
 		self.base_url = base_url
 		self.limit_keyword = limit_keyword
 		self.before_keyword = before_keyword
@@ -106,6 +106,7 @@ class PushshiftClient:
 		self.failures = 0
 		self.failures_threshold = 5
 		self.request_seconds = None
+		self.debug = debug
 
 	def __str__(self):
 		return f"Pushshift client: {self.client_type}"
@@ -140,19 +141,29 @@ class PushshiftClient:
 	def get_comments(self, keyword, limit, before, user_agent, timeout=10):
 		url = self.get_url(keyword, limit, before)
 		try:
+			if self.debug:
+				log.info(f"pushshift client: calling {url}")
 			json = requests.get(url, headers={'User-Agent': user_agent}, timeout=timeout)
 			if json.status_code == 200:
 				self.failures = 0
 				self.failures_threshold = 5
+				if self.debug:
+					log.info(f"pushshift client: call success")
 				return json.json()['data'], None
 			else:
 				self.failures += 1
+				if self.debug:
+					log.info(f"pushshift client: call failure {json.status_code} : {self.failures}")
 				return None, f"Pushshift bad status: {json.status_code}"
 		except Exception as err:
 			self.failures += 1
 			if isinstance(err, requests.exceptions.ReadTimeout):
+				if self.debug:
+					log.info(f"pushshift client: call failure readtimeout : {self.failures}")
 				return None, f"Pushshift read timeout"
 			else:
+				if self.debug:
+					log.info(f"pushshift client: call failure {type(err).__name__} : {self.failures}")
 				return None, f"Pushshift parse exception: {type(err).__name__} : {err}"
 
 	def check_lag(self, user_agent):
@@ -179,7 +190,7 @@ class PushshiftClient:
 
 
 class Reddit:
-	def __init__(self, user_name, no_post=False, prefix=None, user_agent=None, pushshift_client=PushshiftType.PROD, init_pushshift_lag=False):
+	def __init__(self, user_name, no_post=False, prefix=None, user_agent=None, pushshift_client=PushshiftType.PROD, init_pushshift_lag=False, debug=False):
 		log.info(f"Initializing reddit class: user={user_name} prefix={prefix} no_post={no_post}")
 		self.no_post = no_post
 
@@ -220,9 +231,9 @@ class Reddit:
 		self.recent_pushshift_client = None
 
 		self.pushshift_prod_client = PushshiftClient(
-			"https://api.pushshift.io/reddit/comment/search", "limit", "before", "after", PushshiftType.PROD, max_limit=1000, lag_keyword="*&after=24h")
+			"https://api.pushshift.io/reddit/comment/search", "limit", "before", "after", PushshiftType.PROD, max_limit=1000, lag_keyword="*", debug=debug)
 		self.pushshift_beta_client = PushshiftClient(
-			"https://beta.pushshift.io/search/reddit/comments", "size", "max_created_utc", "min_created_utc", PushshiftType.BETA, max_limit=250)
+			"https://beta.pushshift.io/search/reddit/comments", "size", "max_created_utc", "min_created_utc", PushshiftType.BETA, max_limit=250, debug=debug)
 
 		if init_pushshift_lag:
 			self.check_pushshift_lag(True)
