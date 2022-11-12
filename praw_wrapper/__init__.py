@@ -93,7 +93,7 @@ def get_config_var(config, section, variable):
 
 
 class PushshiftClient:
-	def __init__(self, base_url, limit_keyword, before_keyword, client_type, after_keyword, max_limit=1000, lag_keyword=None):
+	def __init__(self, base_url, limit_keyword, before_keyword, after_keyword, client_type, max_limit=1000, lag_keyword=None):
 		self.base_url = base_url
 		self.limit_keyword = limit_keyword
 		self.before_keyword = before_keyword
