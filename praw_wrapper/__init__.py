@@ -222,7 +222,7 @@ class Reddit:
 		self.pushshift_prod_client = PushshiftClient(
 			"https://api.pushshift.io/reddit/search/comment", "limit", "before", "after", PushshiftType.PROD, max_limit=1000, lag_keyword="*", debug=debug)
 		self.pushshift_beta_client = PushshiftClient(
-			"https://api.pushshift.io/search/reddit/comment", "size", "max_created_utc", "min_created_utc", PushshiftType.BETA, max_limit=1000, lag_keyword="*", debug=debug)
+			"https://api.pushshift.io/reddit/search/comment", "size", "max_created_utc", "min_created_utc", PushshiftType.BETA, max_limit=1000, lag_keyword="*", debug=debug)
 
 		if init_pushshift_lag:
 			self.check_pushshift_lag(True)
