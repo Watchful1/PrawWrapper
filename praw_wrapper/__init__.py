@@ -135,7 +135,6 @@ class PushshiftClient:
 			bldr.append("=")
 			bldr.append(str(after_seconds))
 			bldr.append("s&")
-		bldr.append("sort=desc")
 		return ''.join(bldr)
 
 	def get_comments(self, keyword, limit, before, user_agent, timeout=10):
@@ -231,7 +230,7 @@ class Reddit:
 		self.recent_pushshift_client = None
 
 		self.pushshift_prod_client = PushshiftClient(
-			"https://api.pushshift.io/reddit/comment/search", "limit", "before", "after", PushshiftType.PROD, max_limit=1000, lag_keyword="*", debug=debug)
+			"https://api.pushshift.io/reddit/search/comment", "limit", "before", "after", PushshiftType.PROD, max_limit=1000, lag_keyword="*", debug=debug)
 		self.pushshift_beta_client = PushshiftClient(
 			"https://beta.pushshift.io/search/reddit/comments", "size", "max_created_utc", "min_created_utc", PushshiftType.BETA, max_limit=250, debug=debug)
 
