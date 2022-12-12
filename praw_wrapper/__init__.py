@@ -115,27 +115,17 @@ class PushshiftClient:
 		return self.failures > 0
 
 	def get_url(self, keyword, limit, before, after_seconds=3600):
-		bldr = [self.base_url, "?"]
+		params = []
 		if keyword is not None:
-			bldr.append("q=")
-			bldr.append(keyword)
-			bldr.append("&")
+			params.append(f"q={keyword}")
 		if limit is not None:
-			bldr.append(self.limit_keyword)
-			bldr.append("=")
-			bldr.append(str(min(limit, self.max_limit)))
-			bldr.append("&")
+			params.append(f"{self.limit_keyword}={min(limit, self.max_limit)}")
 		if before is not None:
-			bldr.append(self.before_keyword)
-			bldr.append("=")
-			bldr.append(str(before))
-			bldr.append("&")
+			params.append(f"{self.before_keyword}={before}")
 		elif after_seconds is not None:
-			bldr.append(self.after_keyword)
-			bldr.append("=")
-			bldr.append(str(after_seconds))
-			bldr.append("s&")
-		return ''.join(bldr)
+			params.append(f"{self.after_keyword}={after_seconds}s")
+
+		return self.base_url + "?" + '&'.join(params)
 
 	def get_comments(self, keyword, limit, before, user_agent, timeout=10):
 		url = self.get_url(keyword, limit, before)
@@ -232,7 +222,7 @@ class Reddit:
 		self.pushshift_prod_client = PushshiftClient(
 			"https://api.pushshift.io/reddit/search/comment", "limit", "before", "after", PushshiftType.PROD, max_limit=1000, lag_keyword="*", debug=debug)
 		self.pushshift_beta_client = PushshiftClient(
-			"https://beta.pushshift.io/search/reddit/comments", "size", "max_created_utc", "min_created_utc", PushshiftType.BETA, max_limit=250, debug=debug)
+			"https://api.pushshift.io/search/reddit/comments", "size", "max_created_utc", "min_created_utc", PushshiftType.BETA, max_limit=1000, lag_keyword="*", debug=debug)
 
 		if init_pushshift_lag:
 			self.check_pushshift_lag(True)
