@@ -29,6 +29,9 @@ class IngestDatabase:
 		Base.metadata.create_all(self.engine)
 		self.session.commit()
 
+	def commit(self):
+		self.session.commit()
+
 	def close(self):
 		self.session.commit()
 		self.engine.dispose()
@@ -112,7 +115,7 @@ class IngestDatabase:
 class Client(Base):
 	__tablename__ = 'clients'
 	__table_args__ = (
-		UniqueConstraint("name"),
+		UniqueConstraint("name", name="_clients_name"),
 	)
 
 	id = Column(Integer, primary_key=True)
@@ -128,7 +131,7 @@ class Client(Base):
 class Search(Base):
 	__tablename__ = 'search'
 	__table_args__ = (
-		UniqueConstraint('client_id', 'search_term', name='_search_client_term')
+		UniqueConstraint('client_id', 'search_term', name='_search_client_term'),
 	)
 
 	id = Column(Integer, primary_key=True)
