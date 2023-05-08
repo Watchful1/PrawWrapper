@@ -169,7 +169,7 @@ class IngestComment(Base):
 		permalink,
 		link_id,
 		body,
-		client
+		client_id
 	):
 		self.id = id
 		self.author = author
@@ -178,4 +178,4 @@ class IngestComment(Base):
 		self.permalink = permalink
 		self.link_id = link_id
 		self.body = body
-		self.client = client
+		self.client_id = client_id
