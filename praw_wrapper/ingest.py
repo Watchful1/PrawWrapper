@@ -111,6 +111,21 @@ class IngestDatabase:
 		log.debug(f"Deleting comment: {comment.client_id} : {comment.id}")
 		self.session.delete(comment)
 
+	def save_keystore(self, key, value):
+		log.debug(f"Saving keystore: {key} : {value}")
+		self.session.merge(KeyValue(key, value))
+
+	def get_keystore(self, key):
+		log.debug(f"Fetching keystore: {key}")
+		key_value = self.session.query(KeyValue).filter_by(key=key).first()
+
+		if key_value is None:
+			log.debug("Key not found")
+			return None
+
+		log.debug(f"Value: {key_value.value}")
+		return key_value.value
+
 
 class Client(Base):
 	__tablename__ = 'clients'
@@ -182,3 +197,18 @@ class IngestComment(Base):
 		self.link_id = link_id
 		self.body = body
 		self.client_id = client_id
+
+
+class KeyValue(Base):
+	__tablename__ = 'key_value'
+
+	key = Column(String(32), primary_key=True)
+	value = Column(String(200))
+
+	def __init__(
+		self,
+		key,
+		value
+	):
+		self.key = key
+		self.value = value

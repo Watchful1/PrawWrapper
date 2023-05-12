@@ -2,7 +2,7 @@ import logging.handlers
 import random
 from datetime import datetime, timezone
 
-from praw_wrapper import ReturnType, id_from_fullname
+from praw_wrapper.reddit import ReturnType, id_from_fullname
 
 log = logging.getLogger("bot")
 
