@@ -114,7 +114,7 @@ class IngestDatabase:
 
 	def delete_all_comments(self):
 		log.debug(f"Deleting all comments")
-		self.session.execute(sa_text('''TRUNCATE TABLE ingest_comments''').execution_options(autocommit=True))
+		self.session.execute(sa_text('''delete from ingest_comments''').execution_options(autocommit=True))
 
 	def save_keystore(self, key, value):
 		log.debug(f"Saving keystore: {key} : {value}")
