@@ -1,6 +1,7 @@
 from sqlalchemy import create_engine, UniqueConstraint, Column, ForeignKey, Integer, String, DateTime
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker, relationship, joinedload
+from sqlalchemy.sql import text as sa_text
 import os
 import logging.handlers
 from shutil import copyfile
@@ -110,6 +111,10 @@ class IngestDatabase:
 	def delete_comment(self, comment):
 		log.debug(f"Deleting comment: {comment.client_id} : {comment.id}")
 		self.session.delete(comment)
+
+	def delete_all_comments(self):
+		log.debug(f"Deleting all comments")
+		self.session.execute(sa_text('''TRUNCATE TABLE ingest_comments''').execution_options(autocommit=True))
 
 	def save_keystore(self, key, value):
 		log.debug(f"Saving keystore: {key} : {value}")
