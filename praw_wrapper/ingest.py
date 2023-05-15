@@ -70,6 +70,12 @@ class IngestDatabase:
 
 		return client
 
+	def get_all_clients(self):
+		log.debug(f"Fetching client list")
+		clients = self.session.query(Client).all()
+		log.debug(f"Found clients: {len(clients)}")
+		return clients
+
 	def register_search(self, search_term, client_name=None):
 		log.debug(f"Registering search: {client_name} : {search_term}")
 		client = self.get_or_add_client(client_name)
@@ -103,6 +109,15 @@ class IngestDatabase:
 		comments = self.session.query(IngestComment).filter_by(client_id=client_id).order_by(IngestComment.created_utc.asc()).limit(limit).all()
 		log.debug(f"Found comments: {len(comments)}")
 		return comments
+
+	def get_count_comments(self, client):
+		log.debug(f"Fetching count of comments")
+		if client is None:
+			count_comments = self.session.query(IngestComment).filter_by(client=client).count()
+		else:
+			count_comments = self.session.query(IngestComment).count()
+		log.debug(f"Found comments: {count_comments}")
+		return count_comments
 
 	def add_comment(self, comment):
 		log.debug(f"Adding comment: {comment.client_id} : {comment.id}")
