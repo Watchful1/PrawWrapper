@@ -112,7 +112,7 @@ class IngestDatabase:
 
 	def get_count_comments(self, client):
 		log.debug(f"Fetching count of comments")
-		if client is None:
+		if client is not None:
 			count_comments = self.session.query(IngestComment).filter_by(client=client).count()
 		else:
 			count_comments = self.session.query(IngestComment).count()
