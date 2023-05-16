@@ -28,7 +28,7 @@ class IngestDatabase:
 		if debug:
 			self.engine = create_engine(f'sqlite:///:memory:')
 		else:
-			self.engine = create_engine(f'sqlite:///{location}')
+			self.engine = create_engine(f'sqlite:///{location}', connect_args={'timeout': 20})
 
 		session_maker = sessionmaker(bind=self.engine)
 		self.session = session_maker()
