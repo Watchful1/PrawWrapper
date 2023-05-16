@@ -3,6 +3,7 @@ import random
 from datetime import datetime, timezone
 
 from praw_wrapper.reddit import ReturnType, id_from_fullname
+from praw_wrapper.ingest import IngestComment
 
 log = logging.getLogger("bot")
 
@@ -80,16 +81,17 @@ class RedditObject:
 		self.title = title
 		self.removed_by_category = None
 
-	def get_pushshift_dict(self):
-		return {
-			'id': self.id,
-			'author': self.author.name,
-			'link_id': self.link_id,
-			'body': self.body,
-			'permalink': self.permalink,
-			'created_utc': self.created_utc,
-			'subreddit': self.subreddit.display_name
-		}
+	def get_ingest_comment(self):
+		return IngestComment(
+			id=self.id,
+			author=self.author.name,
+			subreddit=self.subreddit.display_name,
+			created_utc=self.created_utc,
+			permalink=self.permalink,
+			link_id=self.link_id,
+			body=self.body,
+			client_id=1,
+		)
 
 	def get_first_child(self):
 		if len(self.children):
