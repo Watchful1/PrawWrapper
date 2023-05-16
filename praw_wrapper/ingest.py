@@ -21,6 +21,7 @@ class IngestDatabase:
 		self.session = None
 		self.location = location
 		self.default_client_id = default_client_id
+		self.debug = debug
 		self.init(self.location, debug)
 
 	def init(self, location, debug):
@@ -54,7 +55,7 @@ class IngestDatabase:
 				".db"
 		)
 
-		self.init(self.location)
+		self.init(self.location, self.debug)
 
 	def set_default_client(self, client_name):
 		log.debug(f"Setting default client to: {client_name}")
@@ -77,6 +78,8 @@ class IngestDatabase:
 			log.debug(f"Creating client: {client_name}")
 			client = Client(client_name)
 			self.session.add(client)
+			self.commit()
+			client = self.session.query(Client).filter_by(name=client_name).first()
 
 		return client
 
