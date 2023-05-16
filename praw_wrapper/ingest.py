@@ -52,6 +52,12 @@ class IngestDatabase:
 
 		self.init(self.location)
 
+	def set_default_client(self, client_name):
+		log.debug(f"Setting default client to: {client_name}")
+		client = self.get_or_add_client(client_name)
+		log.debug(f"Setting default client to id: {client.id}")
+		self.default_client_id = client.id
+
 	def get_or_add_client(self, client_name):
 		log.debug(f"Fetching client: {client_name} : {self.default_client_id}")
 
