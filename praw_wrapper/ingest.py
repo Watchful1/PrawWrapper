@@ -16,15 +16,19 @@ Base = declarative_base()
 
 
 class IngestDatabase:
-	def __init__(self, location="database.db", default_client_id=None):
+	def __init__(self, location="database.db", default_client_id=None, debug=False):
 		self.engine = None
 		self.session = None
 		self.location = location
 		self.default_client_id = default_client_id
-		self.init(self.location)
+		self.init(self.location, debug)
 
-	def init(self, location):
-		self.engine = create_engine(f'sqlite:///{location}')
+	def init(self, location, debug):
+		if debug:
+			self.engine = create_engine(f'sqlite:///:memory:')
+		else:
+			self.engine = create_engine(f'sqlite:///{location}')
+
 		session_maker = sessionmaker(bind=self.engine)
 		self.session = session_maker()
 		Base.metadata.create_all(self.engine)
