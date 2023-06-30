@@ -246,6 +246,9 @@ class Reddit:
 		if not self.no_post:
 			try:
 				self.reddit.subreddit(subreddit_name).quaran.opt_in()
+			except prawcore.exceptions.Forbidden:
+				log.info(f"Forbidden opting in to subreddit: {subreddit_name}")
+				return False
 			except Exception:
 				log.warning(f"Error opting in to subreddit: {subreddit_name}")
 				log.warning(traceback.format_exc())
