@@ -207,6 +207,9 @@ class Reddit:
 
 	def send_message(self, user_name, subject, body):
 		log.debug(f"Sending message to u/{user_name}")
+		if user_name in {'[deleted]'}:
+			log.warning(f"Trying to send message to u/{user_name}, skipping")
+			return ReturnType.INVALID_USER
 		if self.no_post:
 			log.info(body)
 			return ReturnType.SUCCESS
