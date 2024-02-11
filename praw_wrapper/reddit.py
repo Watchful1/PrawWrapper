@@ -108,12 +108,12 @@ class Reddit:
 			return
 		remaining = int(self.reddit._core._rate_limiter.remaining)
 		used = int(self.reddit._core._rate_limiter.used)
-		self.counters.rate_requests_remaining.labels(username=self.username).set(remaining)
-		self.counters.rate_requests_used.labels(username=self.username).set(used)
+		self.counters[0].labels(username=self.username).set(remaining)  # rate_requests_remaining
+		self.counters[1].labels(username=self.username).set(used)  # rate_requests_used
 
 		reset_timestamp = self.reddit._core._rate_limiter.reset_timestamp
 		seconds_to_reset = (datetime.utcfromtimestamp(reset_timestamp) - datetime.utcnow()).total_seconds()
-		self.counters.rate_seconds_remaining.labels(username=self.username).set(int(seconds_to_reset))
+		self.counters[2].labels(username=self.username).set(int(seconds_to_reset))  # rate_seconds_remaining
 
 	def run_function(self, function, arguments):
 		output = None
