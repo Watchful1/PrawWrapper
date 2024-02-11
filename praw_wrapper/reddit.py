@@ -67,9 +67,10 @@ def get_config_var(config, section, variable):
 
 
 class Reddit:
-	def __init__(self, user_name, no_post=False, prefix=None, user_agent=None, debug=False):
+	def __init__(self, user_name, no_post=False, prefix=None, user_agent=None, counters=None):
 		log.info(f"Initializing reddit class: user={user_name} prefix={prefix} no_post={no_post}")
 		self.no_post = no_post
+		self.counters = counters
 
 		config = get_config()
 		if prefix is None:
@@ -102,6 +103,18 @@ class Reddit:
 		else:
 			self.user_agent = user_agent
 
+	def record_rate_limits(self):
+		if self.counters is None:
+			return
+		remaining = int(self.reddit._core._rate_limiter.remaining)
+		used = int(self.reddit._core._rate_limiter.used)
+		self.counters.rate_requests_remaining.labels(username=self.username).set(remaining)
+		self.counters.rate_requests_used.labels(username=self.username).set(used)
+
+		reset_timestamp = self.reddit._core._rate_limiter.reset_timestamp
+		seconds_to_reset = (datetime.utcfromtimestamp(reset_timestamp) - datetime.utcnow()).total_seconds()
+		self.counters.rate_seconds_remaining.labels(username=self.username).set(int(seconds_to_reset))
+
 	def run_function(self, function, arguments):
 		output = None
 		result = None
@@ -121,6 +134,7 @@ class Reddit:
 
 		if result is None:
 			result = ReturnType.SUCCESS
+		self.record_rate_limits()
 		return output, result
 
 	def is_message(self, item):
@@ -131,6 +145,7 @@ class Reddit:
 		message_list = []
 		for message in self.reddit.inbox.unread(limit=count):
 			message_list.append(message)
+		self.record_rate_limits()
 		return message_list
 
 	def reply_message(self, message, body):
@@ -146,6 +161,7 @@ class Reddit:
 		log.debug(f"Marking message as read: {message.id}")
 		if not self.no_post:
 			message.mark_read()
+		self.record_rate_limits()
 
 	def get_submission(self, submission_id):
 		log.debug(f"Fetching submission by id: {submission_id}")
@@ -166,6 +182,7 @@ class Reddit:
 		reddit_subreddit = self.reddit.subreddit(subreddit_name)
 		try:
 			reddit_subreddit._fetch()
+			self.record_rate_limits()
 		except (prawcore.exceptions.Redirect, prawcore.exceptions.NotFound):
 			return False
 		except prawcore.exceptions.Forbidden:
@@ -179,6 +196,7 @@ class Reddit:
 		redditor = self.reddit.redditor(redditor_name)
 		try:
 			redditor._fetch()
+			self.record_rate_limits()
 		except prawcore.exceptions.NotFound:
 			return False
 		return True
@@ -199,6 +217,7 @@ class Reddit:
 		if not self.no_post:
 			try:
 				comment.delete()
+				self.record_rate_limits()
 			except Exception:
 				log.warning(f"Error deleting comment: {comment.comment_id}")
 				log.warning(traceback.format_exc())
@@ -234,11 +253,15 @@ class Reddit:
 
 	def reply_comment(self, comment, body):
 		log.debug(f"Replying to comment: {comment.id}")
-		return self.reply(comment, body)
+		result = self.reply(comment, body)
+		self.record_rate_limits()
+		return result
 
 	def reply_submission(self, submission, body):
 		log.debug(f"Replying to submission: {submission.id}")
-		return self.reply(submission, body)
+		result = self.reply(submission, body)
+		self.record_rate_limits()
+		return result
 
 	def get_subreddit_submissions(self, subreddit_name):
 		log.debug(f"Getting subreddit submissions: {subreddit_name}")
@@ -249,6 +272,7 @@ class Reddit:
 		if not self.no_post:
 			try:
 				self.reddit.subreddit(subreddit_name).quaran.opt_in()
+				self.record_rate_limits()
 			except prawcore.exceptions.Forbidden:
 				log.info(f"Forbidden opting in to subreddit: {subreddit_name}")
 				return False
@@ -261,10 +285,14 @@ class Reddit:
 	def get_user_creation_date(self, user_name):
 		log.debug(f"Getting user creation date: {user_name}")
 		try:
-			return self.reddit.redditor(user_name).created_utc
+			created_utc = self.reddit.redditor(user_name).created_utc
+			self.record_rate_limits()
+			return created_utc
 		except Exception:
 			return None
 
 	def call_info(self, fullnames):
 		log.debug(f"Fetching {len(fullnames)} ids from info")
-		return self.reddit.info(fullnames)
+		result = self.reddit.info(fullnames)
+		self.record_rate_limits()
+		return result
