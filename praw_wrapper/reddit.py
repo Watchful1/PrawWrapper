@@ -1,15 +1,13 @@
 import praw
 import prawcore
 import traceback
-import requests
 import logging.handlers
 import os
 import configparser
-from datetime import timedelta
 from datetime import datetime
 from enum import Enum
 import re
-import time
+import prometheus_client
 
 
 log = logging.getLogger("bot")
@@ -67,10 +65,13 @@ def get_config_var(config, section, variable):
 
 
 class Reddit:
-	def __init__(self, user_name, no_post=False, prefix=None, user_agent=None, counters=None):
+	def __init__(self, user_name, no_post=False, prefix=None, user_agent=None):
 		log.info(f"Initializing reddit class: user={user_name} prefix={prefix} no_post={no_post}")
 		self.no_post = no_post
-		self.counters = counters
+
+		self.rate_requests_remaining = prometheus_client.Gauge('rate_requests_remaining', "Number of requests remaining in the window", ['username'])
+		self.rate_seconds_remaining = prometheus_client.Gauge('rate_seconds_remaining', "Number of seconds till the window reset",['username'])
+		self.rate_requests_used = prometheus_client.Gauge('rate_requests_used', "Number of requests used", ['username'])
 
 		config = get_config()
 		if prefix is None:
@@ -104,16 +105,16 @@ class Reddit:
 			self.user_agent = user_agent
 
 	def record_rate_limits(self):
-		if self.counters is None:
-			return
+		# if self.counters is None:
+		# 	return
 		remaining = int(self.reddit._core._rate_limiter.remaining)
 		used = int(self.reddit._core._rate_limiter.used)
-		self.counters[0].labels(username=self.username).set(remaining)  # rate_requests_remaining
-		self.counters[1].labels(username=self.username).set(used)  # rate_requests_used
+		self.rate_requests_remaining.labels(username=self.username).set(remaining)  # rate_requests_remaining
+		self.rate_requests_used.labels(username=self.username).set(used)  # rate_requests_used
 
 		reset_timestamp = self.reddit._core._rate_limiter.reset_timestamp
 		seconds_to_reset = (datetime.utcfromtimestamp(reset_timestamp) - datetime.utcnow()).total_seconds()
-		self.counters[2].labels(username=self.username).set(int(seconds_to_reset))  # rate_seconds_remaining
+		self.rate_seconds_remaining.labels(username=self.username).set(int(seconds_to_reset))  # rate_seconds_remaining
 
 	def run_function(self, function, arguments):
 		output = None

@@ -8,6 +8,7 @@ verify_ssl = true
 [packages]
 praw = "*"
 sqlalchemy = "*"
+prometheus-client = "*"
 
 [requires]
 python_version = "3.9"
