@@ -297,3 +297,20 @@ class Reddit:
 		result = self.reddit.info(fullnames)
 		self.record_rate_limits()
 		return result
+
+	def get_subreddit_wiki_page(self, subreddit_name, page_name):
+		log.debug(f"Getting subreddit wiki page: {subreddit_name} : {page_name}")
+		page_text = None
+		try:
+			page_text = self.reddit.subreddit(subreddit_name).wiki[page_name].content_md
+			log.debug(f"Fetch succeeded: {len(page_text)}")
+		except prawcore.exceptions.NotFound:
+			log.debug(f"Page doesnt exist")
+			pass
+		self.record_rate_limits()
+		return page_text
+
+	def update_subreddit_wiki_page(self, subreddit_name, page_name, content):
+		log.debug(f"Updating subreddit wiki page: {subreddit_name} : {page_name} : {len(content)}")
+		self.reddit.subreddit(subreddit_name).wiki[page_name].edit(content=content)
+		self.record_rate_limits()
