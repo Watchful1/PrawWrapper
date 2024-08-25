@@ -63,6 +63,7 @@ class RedditObject:
 		else:
 			self.id = id
 		self.fullname = f"{prefix}_{self.id}"
+		self.name = f"{prefix}_{self.id}"
 		if created is None:
 			self.created_utc = datetime.utcnow().replace(tzinfo=timezone.utc).timestamp()
 		else:
