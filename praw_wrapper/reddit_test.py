@@ -78,6 +78,7 @@ class RedditObject:
 		self.link_flair_text = flair
 
 		self.parent = None
+		self.distinguished = False
 		self.children = []
 		self.title = title
 		self.removed_by_category = None
