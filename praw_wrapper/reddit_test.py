@@ -135,6 +135,7 @@ class Reddit:
 		self.locked_threads = set()
 		self.pushshift_lag = 0
 		self.subreddits = {}
+		self.wiki_pages = {}
 
 	def add_comment(self, comment, self_comment=False):
 		self.all_comments[comment.id] = comment
@@ -259,3 +260,9 @@ class Reddit:
 				results.append(self.all_comments[fullname[3:]])
 
 		return results
+
+	def get_subreddit_wiki_page(self, subreddit_name, page_name):
+		return self.wiki_pages.get(f"{subreddit_name}:{page_name}")
+
+	def update_subreddit_wiki_page(self, subreddit_name, page_name, content):
+		self.wiki_pages[f"{subreddit_name}:{page_name}"] = content
