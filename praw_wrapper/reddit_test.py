@@ -82,6 +82,10 @@ class RedditObject:
 		self.title = title
 		self.removed_by_category = None
 
+	@property
+	def comments(self):
+		return self.children
+
 	def get_ingest_comment(self):
 		return IngestComment(
 			id=self.id,
