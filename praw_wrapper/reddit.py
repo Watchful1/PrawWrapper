@@ -8,6 +8,7 @@ from datetime import datetime
 from enum import Enum
 import re
 import prometheus_client
+import time
 
 
 log = logging.getLogger("bot")
@@ -73,6 +74,7 @@ class Reddit:
 		self.rate_requests_remaining = prometheus_client.Gauge('rate_requests_remaining', "Number of requests remaining in the window", ['username'])
 		self.rate_seconds_remaining = prometheus_client.Gauge('rate_seconds_remaining', "Number of seconds till the window reset",['username'])
 		self.rate_requests_used = prometheus_client.Gauge('rate_requests_used', "Number of requests used", ['username'])
+		self.ratelimit_slept = prometheus_client.Counter('ratelimit_slept', "Time slept", ['username'])
 
 		config = get_config()
 		if prefix is None:
@@ -117,7 +119,7 @@ class Reddit:
 		seconds_to_reset = (datetime.utcfromtimestamp(reset_timestamp) - datetime.utcnow()).total_seconds()
 		self.rate_seconds_remaining.labels(username=self.username).set(int(seconds_to_reset))  # rate_seconds_remaining
 
-	def run_function(self, function, arguments):
+	def run_function(self, function, arguments, retry_seconds=0):
 		output = None
 		result = None
 		try:
@@ -126,6 +128,19 @@ class Reddit:
 			for return_type in ReturnType:
 				if err.error_type == return_type.name:
 					result = return_type
+					if result == ReturnType.RATELIMIT and retry_seconds > 0:
+						seconds = self.reddit._handle_rate_limit(err)
+						if seconds is not None:
+							if seconds < retry_seconds:
+								log.warning(f"Got a ratelimit response, sleeping {seconds}")
+								self.ratelimit_slept.inc(seconds)
+								time.sleep(seconds)
+								self.run_function(function, arguments, retry_seconds - seconds)
+							else:
+								log.warning(f"Got a ratelimit response, but {seconds} was greater than remaining retry seconds {retry_seconds}")
+						else:
+							log.warning(f"Got a ratelimit response, but no seconds were found so we can't sleep, retrying once")
+							self.run_function(function, arguments, 0)
 					break
 			if result is None:
 				raise
@@ -150,13 +165,13 @@ class Reddit:
 		self.record_rate_limits()
 		return message_list
 
-	def reply_message(self, message, body):
+	def reply_message(self, message, body, retry_seconds=0):
 		log.debug(f"Replying to message: {message.id}")
 		if self.no_post:
 			log.info(body)
 			return ReturnType.SUCCESS
 		else:
-			output, result = self.run_function(message.reply, [body])
+			output, result = self.run_function(message.reply, [body], retry_seconds)
 			return result
 
 	def mark_read(self, message):
@@ -226,7 +241,7 @@ class Reddit:
 				return False
 		return True
 
-	def send_message(self, user_name, subject, body):
+	def send_message(self, user_name, subject, body, retry_seconds=0):
 		log.debug(f"Sending message to u/{user_name}")
 		if user_name in {'[deleted]'}:
 			log.warning(f"Trying to send message to u/{user_name}, skipping")
@@ -236,15 +251,15 @@ class Reddit:
 			return ReturnType.SUCCESS
 		else:
 			redditor = self.reddit.redditor(user_name)
-			output, result = self.run_function(redditor.message, [subject, body])
+			output, result = self.run_function(redditor.message, [subject, body], retry_seconds)
 			return result
 
-	def reply(self, comment_submission, body):
+	def reply(self, comment_submission, body, retry_seconds=0):
 		if self.no_post:
 			log.info(body)
 			return "xxxxxx", ReturnType.SUCCESS
 		else:
-			output, result = self.run_function(comment_submission.reply, [body])
+			output, result = self.run_function(comment_submission.reply, [body], retry_seconds)
 			if output is not None:
 				return output.id, result
 			else:
