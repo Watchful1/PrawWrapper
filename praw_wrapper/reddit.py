@@ -107,6 +107,8 @@ class Reddit:
 		else:
 			self.user_agent = user_agent
 
+		self.ratelimit_regex = re.compile(r"([0-9]{1,3}) (milliseconds?|seconds?|minutes?)")
+
 	def record_rate_limits(self):
 		# if self.counters is None:
 		# 	return
@@ -119,6 +121,20 @@ class Reddit:
 		seconds_to_reset = (datetime.utcfromtimestamp(reset_timestamp) - datetime.utcnow()).total_seconds()
 		self.rate_seconds_remaining.labels(username=self.username).set(int(seconds_to_reset))  # rate_seconds_remaining
 
+	def get_ratelimit_seconds(self, err):
+		for item in err.items:
+			if item.error_type == "RATELIMIT":
+				amount_search = self.ratelimit_regex.search(item.message)
+				if not amount_search:
+					break
+				seconds = int(amount_search.group(1))
+				if amount_search.group(2).startswith("minute"):
+					seconds *= 60
+				elif amount_search.group(2).startswith("millisecond"):
+					seconds = 0
+				return seconds + 1
+		return None
+
 	def run_function(self, function, arguments, retry_seconds=0):
 		output = None
 		result = None
@@ -129,7 +145,7 @@ class Reddit:
 				if err.error_type == return_type.name:
 					result = return_type
 					if result == ReturnType.RATELIMIT and retry_seconds > 0:
-						seconds = self.reddit._handle_rate_limit(err)
+						seconds = self.get_ratelimit_seconds(err)
 						if seconds is not None:
 							if seconds < retry_seconds:
 								log.warning(f"Got a ratelimit response, sleeping {seconds}")

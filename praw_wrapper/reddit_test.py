@@ -178,7 +178,7 @@ class Reddit:
 	def mark_read(self, message):
 		message.mark_read()
 
-	def send_message(self, username, subject, body):
+	def send_message(self, username, subject, body, retry_seconds=0):
 		new_message = RedditObject(body, self.username, dest=username)
 		self.sent_messages.append(new_message)
 		return ReturnType.SUCCESS
