@@ -149,7 +149,7 @@ class Reddit:
 						if seconds is not None:
 							if seconds < retry_seconds:
 								log.warning(f"Got a ratelimit response, sleeping {seconds}")
-								self.ratelimit_slept.inc(seconds)
+								self.ratelimit_slept.labels(username=self.username).inc(seconds)
 								time.sleep(seconds)
 								self.run_function(function, arguments, retry_seconds - seconds)
 							else:
