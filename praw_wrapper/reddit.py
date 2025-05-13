@@ -144,11 +144,12 @@ class Reddit:
 			for return_type in ReturnType:
 				if err.error_type == return_type.name:
 					result = return_type
-					if result == ReturnType.RATELIMIT and retry_seconds > 0:
+					if result == ReturnType.RATELIMIT:
 						seconds = self.get_ratelimit_seconds(err)
+						seconds += 10
 						if seconds is not None:
 							if seconds < retry_seconds:
-								log.warning(f"Got a ratelimit response, sleeping {seconds}")
+								log.warning(f"Got a ratelimit response, sleeping {seconds}/{retry_seconds}")
 								self.ratelimit_slept.labels(username=self.username).inc(seconds)
 								time.sleep(seconds)
 								self.run_function(function, arguments, retry_seconds - seconds)
