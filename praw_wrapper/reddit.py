@@ -146,13 +146,12 @@ class Reddit:
 					result = return_type
 					if result == ReturnType.RATELIMIT:
 						seconds = self.get_ratelimit_seconds(err)
-						seconds += 10
 						if seconds is not None:
 							if seconds < retry_seconds:
 								log.warning(f"Got a ratelimit response, sleeping {seconds}/{retry_seconds}")
 								self.ratelimit_slept.labels(username=self.username).inc(seconds)
 								time.sleep(seconds)
-								self.run_function(function, arguments, retry_seconds - seconds)
+								return self.run_function(function, arguments, retry_seconds - seconds)
 							else:
 								log.warning(f"Got a ratelimit response, but {seconds} was greater than remaining retry seconds {retry_seconds}")
 						else:
@@ -161,7 +160,7 @@ class Reddit:
 								if item.error_type == "RATELIMIT":
 									message = item.message
 							log.warning(f"Got a ratelimit response, but no seconds were found so we can't sleep, retrying once : {message}")
-							self.run_function(function, arguments, 0)
+							return self.run_function(function, arguments, 0)
 					break
 			if result is None:
 				raise
