@@ -139,7 +139,11 @@ class Reddit:
 							else:
 								log.warning(f"Got a ratelimit response, but {seconds} was greater than remaining retry seconds {retry_seconds}")
 						else:
-							log.warning(f"Got a ratelimit response, but no seconds were found so we can't sleep, retrying once")
+							message = ""
+							for item in err.items:
+								if item.error_type == "RATELIMIT":
+									message = item.message
+							log.warning(f"Got a ratelimit response, but no seconds were found so we can't sleep, retrying once : {message}")
 							self.run_function(function, arguments, 0)
 					break
 			if result is None:

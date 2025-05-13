@@ -114,7 +114,7 @@ class RedditObject:
 	def mark_read(self):
 		return
 
-	def reply(self, body, author):
+	def reply(self, body, author, retry_seconds=0):
 		new_message = RedditObject(body, author)
 		new_message.parent = self
 		self.children.append(new_message)
@@ -153,7 +153,7 @@ class Reddit:
 	def add_submission(self, submission):
 		self.all_submissions[submission.id] = submission
 
-	def reply_message(self, message, body):
+	def reply_message(self, message, body, retry_seconds=0):
 		self.sent_messages.append(message.reply(body, self.username))
 		return ReturnType.SUCCESS
 
