@@ -38,6 +38,7 @@ class ReturnType(Enum):
 	COMMENT_UNREPLIABLE = 17
 	SOMETHING_IS_BROKEN = 18
 	COMMENT_GUIDANCE_VALIDATION_FAILED = 19
+	SERVER_ERROR = 20  # for manual use
 
 
 def get_config():
