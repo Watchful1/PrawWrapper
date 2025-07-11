@@ -137,21 +137,17 @@ class Reddit:
 				amount_search_new = self.ratelimit_regex_new.search(item.message)
 				if amount_search_new:
 					seconds = 0
-					seconds_match = None
-					if len(amount_search_new.groups()) == 2 and amount_search_new.group(1).endswith("m"):
+					if amount_search_new.group(1) is not None:
 						minutes_int_str = amount_search_new.group(1)[:-1]
 						minutes = int(minutes_int_str)
 						seconds = 60 * minutes
-						seconds_match = amount_search_new.group(2)
-					elif len(amount_search_new.groups()) == 1:
-						seconds_match = amount_search_new.group(1)
+					if amount_search_new.group(2) is not None:
+						seconds_int_str = amount_search_new.group(2)[:-1]
+						seconds += int(seconds_int_str)
 					else:
 						log.warning(f"Unknown matches for new regex: {item.message}")
 						return None
 
-					if seconds_match.endswith("s"):
-						seconds_int_str = seconds_match[:-1]
-						seconds += int(seconds_int_str)
 					return seconds + 1
 
 		return None
