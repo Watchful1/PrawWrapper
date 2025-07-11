@@ -109,6 +109,7 @@ class Reddit:
 			self.user_agent = user_agent
 
 		self.ratelimit_regex = re.compile(r"([0-9]{1,3}) (milliseconds?|seconds?|minutes?)")
+		self.ratelimit_regex_new = re.compile(r"([0-9]{1,3}m)?([0-9]{1,3}s)")
 
 	def record_rate_limits(self):
 		# if self.counters is None:
@@ -126,14 +127,33 @@ class Reddit:
 		for item in err.items:
 			if item.error_type == "RATELIMIT":
 				amount_search = self.ratelimit_regex.search(item.message)
-				if not amount_search:
-					break
-				seconds = int(amount_search.group(1))
-				if amount_search.group(2).startswith("minute"):
-					seconds *= 60
-				elif amount_search.group(2).startswith("millisecond"):
+				if amount_search:
+					seconds = int(amount_search.group(1))
+					if amount_search.group(2).startswith("minute"):
+						seconds *= 60
+					elif amount_search.group(2).startswith("millisecond"):
+						seconds = 0
+					return seconds + 1
+				amount_search_new = self.ratelimit_regex_new.search(item.message)
+				if amount_search_new:
 					seconds = 0
-				return seconds + 1
+					seconds_match = None
+					if len(amount_search_new.groups()) == 2 and amount_search_new.group(1).endswith("m"):
+						minutes_int_str = amount_search_new.group(1)[:-1]
+						minutes = int(minutes_int_str)
+						seconds = 60 * minutes
+						seconds_match = amount_search_new.group(2)
+					elif len(amount_search_new.groups()) == 1:
+						seconds_match = amount_search_new.group(1)
+					else:
+						log.warning(f"Unknown matches for new regex: {item.message}")
+						return None
+
+					if seconds_match.endswith("s"):
+						seconds_int_str = seconds_match[:-1]
+						seconds += int(seconds_int_str)
+					return seconds + 1
+
 		return None
 
 	def run_function(self, function, arguments, retry_seconds=0):
