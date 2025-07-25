@@ -38,7 +38,7 @@ class ReturnType(Enum):
 	COMMENT_UNREPLIABLE = 17
 	SOMETHING_IS_BROKEN = 18
 	COMMENT_GUIDANCE_VALIDATION_FAILED = 19
-	SERVER_ERROR = 20  # for manual use
+	SERVER_ERROR = 20
 
 
 def get_config():
@@ -183,6 +183,8 @@ class Reddit:
 				raise
 		except prawcore.exceptions.Forbidden:
 			result = ReturnType.FORBIDDEN
+		except prawcore.exceptions.ServerError:
+			result = ReturnType.SERVER_ERROR
 		except IndexError:
 			result = ReturnType.QUARANTINED
 
