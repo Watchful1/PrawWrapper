@@ -39,6 +39,7 @@ class ReturnType(Enum):
 	SOMETHING_IS_BROKEN = 18
 	COMMENT_GUIDANCE_VALIDATION_FAILED = 19
 	SERVER_ERROR = 20
+	TOO_LONG = 21
 
 
 def get_config():
@@ -157,7 +158,7 @@ class Reddit:
 		result = None
 		try:
 			output = function(*arguments)
-		except praw.exceptions.APIException as err:
+		except (praw.exceptions.APIException, praw.exceptions.RedditAPIException) as err:
 			for return_type in ReturnType:
 				if err.error_type == return_type.name:
 					result = return_type
